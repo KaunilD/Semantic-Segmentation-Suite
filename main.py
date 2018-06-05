@@ -413,8 +413,14 @@ if args.mode == "train":
 
             metrics = prfs(cm)
             metrics_df = convert_prfs_to_data_frame(metrics, class_names_list)
-            print('metrics')
+            metrics_df['Mode'] = 'Val'
+            metrics_df['Epoch'] = epoch + 1
             print(metrics_df)
+            if os.path.exists('metrics.json'):
+                df = pd.read_json('metrics.json')
+                df = pd.concat((df, metrics_df))
+                metrics_df = df
+            metrics_df.to_json('metrics.json', orient='records')
 
             avg_score = np.mean(scores_list)
             class_avg_scores = np.mean(class_scores_list, axis=0)
