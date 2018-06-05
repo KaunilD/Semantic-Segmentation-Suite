@@ -9,6 +9,8 @@ import random
 import os, sys
 import subprocess
 
+from modelutil.metrics import confusion_matrix, prfs, \
+    convert_prfs_to_data_frame
 
 import helpers 
 import utils 
@@ -360,6 +362,7 @@ if args.mode == "train":
             f1_list = []
             iou_list = []
 
+            cm = np.zeros((num_classes, num_classes))
 
             # Do the validation on a small set of validation images
             for ind in val_indices:
@@ -376,6 +379,9 @@ if args.mode == "train":
                 output_image = np.array(output_image[0,:,:,:])
                 output_image = helpers.reverse_one_hot(output_image)
                 out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
+
+                cm += confusion_matrix(
+                    gt.ravel(), pred.ravel(), labels=range(num_classes))
 
                 accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
             
@@ -401,6 +407,11 @@ if args.mode == "train":
 
 
             target.close()
+
+            metrics = prfs(cm)
+            metrics_df = convert_prfs_to_data_frame(metrics, class_names_list)
+            print('metrics')
+            print(metrics_df)
 
             avg_score = np.mean(scores_list)
             class_avg_scores = np.mean(class_scores_list, axis=0)
