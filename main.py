@@ -61,6 +61,7 @@ parser.add_argument('--model', type=str, default="FC-DenseNet56", help='The mode
     FRRN-A, FRRN-B, MobileUNet, MobileUNet-Skip, PSPNet-Res50, PSPNet-Res101, PSPNet-Res152, GCN-Res50, GCN-Res101, GCN-Res152, DeepLabV3-Res50 \
     DeepLabV3-Res101, DeepLabV3-Res152, DeepLabV3_plus-Res50, DeepLabV3_plus-Res101, DeepLabV3_plus-Res152, AdapNet, custom')
 parser.add_argument('--learning_rate', type=float, default=0.0001, help='The learning rate')
+parser.add_argument('--score_averaging', type=str, default='macro', help='The score weighting type (see e.g. `sklearn.metrics.accuracy_score`); default is "macro".')
 
 args = parser.parse_args()
 
@@ -381,9 +382,11 @@ if args.mode == "train":
                 out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
                 cm += confusion_matrix(
-                    gt.ravel(), pred.ravel(), labels=range(num_classes))
+                    gt.ravel(), output_image.ravel(), labels=range(num_classes))
 
-                accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
+                accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(
+                    pred=output_image, label=gt,
+                    num_classes=num_classes, score_averaging=args.score_averaging)
             
                 file_name = utils.filepath_to_name(val_input_names[ind])
                 target.write("%s, %f, %f, %f, %f, %f"%(file_name, accuracy, prec, rec, f1, iou))
@@ -506,7 +509,9 @@ elif args.mode == "test":
         output_image = helpers.reverse_one_hot(output_image)
         out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
 
-        accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(pred=output_image, label=gt, num_classes=num_classes)
+        accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(
+            pred=output_image, label=gt,
+            num_classes=num_classes, score_averaging=args.score_averaging)
     
         file_name = utils.filepath_to_name(val_input_names[ind])
         target.write("%s, %f, %f, %f, %f, %f"%(file_name, accuracy, prec, rec, f1, iou))

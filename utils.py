@@ -169,13 +169,13 @@ def compute_class_accuracies(pred, label, num_classes):
         if pred[i] == label[i]:
             count[int(pred[i])] = count[int(pred[i])] + 1.0
 
-    # If there are no pixels from a certain class in the GT, 
-    # it returns NAN because of divide by zero
-    # Replace the nans with a 1.0.
+    # If there are no pixels from a certain class in the GT, it returns
+    # NaN because of divide by zero. Replace NaN with 0.0, not a 1.0
+    # as before.
     accuracies = []
     for i in range(len(total)):
         if total[i] == 0:
-            accuracies.append(1.0)
+            accuracies.append(0.0)
         else:
             accuracies.append(count[i] / total[i])
 
@@ -202,7 +202,7 @@ def compute_mean_iou(pred, label):
     return mean_iou
 
 
-def evaluate_segmentation(pred, label, num_classes, score_averaging="weighted"):
+def evaluate_segmentation(pred, label, num_classes, score_averaging='macro'):
     flat_pred = pred.flatten()
     flat_label = label.flatten()
 
