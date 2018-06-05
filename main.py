@@ -58,6 +58,8 @@ parser.add_argument('--model', type=str, default="FC-DenseNet56", help='The mode
     FC-DenseNet56, FC-DenseNet67, FC-DenseNet103, Encoder-Decoder, Encoder-Decoder-Skip, RefineNet-Res50, RefineNet-Res101, RefineNet-Res152, \
     FRRN-A, FRRN-B, MobileUNet, MobileUNet-Skip, PSPNet-Res50, PSPNet-Res101, PSPNet-Res152, GCN-Res50, GCN-Res101, GCN-Res152, DeepLabV3-Res50 \
     DeepLabV3-Res101, DeepLabV3-Res152, DeepLabV3_plus-Res50, DeepLabV3_plus-Res101, DeepLabV3_plus-Res152, AdapNet, custom')
+parser.add_argument('--learning_rate', type=float, default=0.0001, help='The learning rate')
+
 args = parser.parse_args()
 
 # Get a list of the training, validation, and testing file paths
@@ -203,7 +205,9 @@ else:
         losses = utils.lovasz_softmax(probas=network, labels=net_output)
 loss = tf.reduce_mean(losses)
 
-opt = tf.train.AdamOptimizer(0.0001).minimize(loss, var_list=[var for var in tf.trainable_variables()])
+
+learning_rate = tf.placeholder(tf.float32, shape=[])
+opt = tf.train.AdamOptimizer(learning_rate).minimize(loss, var_list=[var for var in tf.trainable_variables()])
 
 saver=tf.train.Saver(max_to_keep=1000)
 sess.run(tf.global_variables_initializer())
@@ -256,8 +260,13 @@ if args.mode == "train":
     random.seed(16)
     val_indices=random.sample(range(0,len(val_input_names)),num_vals)
 
+    lr = args.learning_rate
+
     # Do the training here
     for epoch in range(0, args.num_epochs):
+
+        if epoch == 10:
+            lr = lr * 0.1
 
         current_losses = []
 
@@ -310,7 +319,11 @@ if args.mode == "train":
                 output_image_batch = np.squeeze(np.stack(output_image_batch, axis=1))
 
             # Do the training
-            _,current=sess.run([opt,loss],feed_dict={net_input:input_image_batch,net_output:output_image_batch})
+            _,current=sess.run([opt,loss],feed_dict={
+                net_input:input_image_batch,
+                net_output:output_image_batch,
+                learning_rate: lr
+                })
             current_losses.append(current)
             cnt = cnt + args.batch_size
             if cnt % 20 == 0:
