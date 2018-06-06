@@ -9,6 +9,7 @@ import argparse
 import random
 import os, sys
 import subprocess
+from glob import glob
 
 from modelutil.metrics import confusion_matrix, prfs, \
     convert_prfs_to_data_frame
@@ -37,6 +38,11 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def build_model_checkpoint_name(args):
+    return "checkpoints/latest_model_" + args.model + "_" + args.dataset + ".ckpt"
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_epochs', type=int, default=300, help='Number of epochs to train for')
@@ -223,11 +229,13 @@ utils.count_params()
 if init_fn is not None:
     init_fn(sess)
 
+
 # Load a previous checkpoint if desired
-model_checkpoint_name = "checkpoints/latest_model_" + args.model + "_" + args.dataset + ".ckpt"
+model_checkpoint_name = build_model_checkpoint_name(args)
 if args.continue_training or not args.mode == "train":
-    print('Loaded latest model checkpoint')
+    print('Loading best model checkpoint')
     saver.restore(sess, model_checkpoint_name)
+    print('Loaded best model checkpoint')
 
 avg_scores_per_epoch = []
 
@@ -265,6 +273,10 @@ if args.mode == "train":
     val_indices=random.sample(range(0,len(val_input_names)),num_vals)
 
     lr = args.learning_rate
+
+    best_f1 = 0.
+    best_f1_epoch = 0
+    best_f1_checkpoint = ''
 
     # Do the training here
     for epoch in range(0, args.num_epochs):
@@ -341,15 +353,6 @@ if args.mode == "train":
         # Create directories if needed
         if not os.path.isdir("%s/%04d"%("checkpoints",epoch)):
             os.makedirs("%s/%04d"%("checkpoints",epoch))
-
-        # Save latest checkpoint to same file name
-        print("Saving latest checkpoint")
-        saver.save(sess,model_checkpoint_name)
-
-        if val_indices != 0 and epoch % args.checkpoint_step == 0:
-            print("Saving checkpoint for this epoch")
-            saver.save(sess,"%s/%04d/model.ckpt"%("checkpoints",epoch))
-
 
         if epoch % args.validation_step == 0:
             print("Performing validation")
@@ -439,6 +442,23 @@ if args.mode == "train":
             print("Validation recall = ", avg_recall)
             print("Validation F1 score = ", avg_f1)
             print("Validation IoU score = ", avg_iou)
+
+            if avg_f1 > best_f1:
+                print('New best F1 ({:.04f} > {:.04f})'.format(
+                    avg_f1, best_f1))
+                print('Saving checkpoint for this epoch')
+                best_f1 = avg_f1
+                best_f1_epoch = epoch
+                best_f1_checkpoint = '%s/%04d/model.ckpt' % ('checkpoints', epoch)
+                saver.save(sess, best_f1_checkpoint)
+                for saved_file in glob(best_f1_checkpoint + '*'):
+                    saved_path, suffix = os.path.splitext(saved_file)
+                    dst = model_checkpoint_name + suffix
+                    try:
+                        os.symlink(saved_file, dst)
+                    except Exception as e:
+                        os.unlink(dst)
+                        os.symlink(saved_file, dst)
 
         epoch_time=time.time()-epoch_st
         remain_time=epoch_time*(args.num_epochs-1-epoch)
