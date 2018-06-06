@@ -79,11 +79,11 @@ sess=tf.Session(config=config)
 # Some of them require pre-trained ResNet
 
 if "Res50" in args.model and not os.path.isfile("models/resnet_v2_50.ckpt"):
-    helpers.download_checkpoints("Res50")
+    utils.download_checkpoints("Res50")
 if "Res101" in args.model and not os.path.isfile("models/resnet_v2_101.ckpt"):
-    helpers.download_checkpoints("Res101")
+    utils.download_checkpoints("Res101")
 if "Res152" in args.model and not os.path.isfile("models/resnet_v2_152.ckpt"):
-    helpers.download_checkpoints("Res152")
+    utils.download_checkpoints("Res152")
 
 # Compute your softmax cross entropy loss
 print("Preparing the model ...")
@@ -121,7 +121,7 @@ elif args.model == "DeepLabV3_plus-Res50" or args.model == "DeepLabV3_plus-Res10
 elif args.model == "AdapNet":
     network = build_adaptnet(net_input, num_classes=label_info['num_classes'])
 elif args.model == "custom":
-    network = build_custom(net_input, num_classes)
+    network = build_custom(net_input, label_info['num_classes'])
 else:
     raise ValueError("Error: the model %d is not available. Try checking which models are available using the command python main.py --help")
 
@@ -147,7 +147,7 @@ loss = tf.reduce_mean(losses)
 learning_rate = tf.placeholder(tf.float32, shape=[])
 opt = tf.train.AdamOptimizer(learning_rate).minimize(loss, var_list=[var for var in tf.trainable_variables()])
 
-saver=tf.train.Saver(max_to_keep=1000)
+saver=tf.train.Saver(max_to_keep=1000, save_relative_paths=True)
 sess.run(tf.global_variables_initializer())
 
 utils.count_params()
@@ -159,9 +159,9 @@ if init_fn is not None:
 
 
 # Load a previous checkpoint if desired
-model_ckpt_name = helpers.make_model_ckpt_name(args)
+model_ckpt_name = utils.make_model_ckpt_name(args)
 if args.continue_training or not args.mode == "train":
-    best_checkpoint_name = helpers.make_best_ckpt_name(model_ckpt_name)
+    best_checkpoint_name = utils.make_best_ckpt_name(model_ckpt_name)
     print('Loading best model checkpoint {}'.format(best_checkpoint_name))
     saver.restore(sess, best_checkpoint_name)
     print('Loaded best model checkpoint {}'.format(best_checkpoint_name))
@@ -172,7 +172,7 @@ avg_scores_per_epoch = []
 print("Loading the data ...")
 train_input_names, train_output_names, \
     val_input_names, val_output_names, \
-    test_input_names, test_output_names = helpers.prepare_data(args.dataset)
+    test_input_names, test_output_names = utils.prepare_data(args.dataset)
 
 if args.mode == "train":
 
@@ -183,7 +183,7 @@ if args.mode == "train":
     print("Crop Width -->", args.crop_width)
     print("Num Epochs -->", args.num_epochs)
     print("Batch Size -->", args.batch_size)
-    print("Num Classes -->", num_classes)
+    print("Num Classes -->", label_info['num_classes'])
 
     print("Data Augmentation:")
     print("\tVertical Flip -->", args.v_flip)
@@ -242,16 +242,16 @@ if args.mode == "train":
             for j in range(args.batch_size):
                 index = i*args.batch_size + j
                 id = id_list[index]
-                input_image = helpers.load_image(train_input_names[id])
-                output_image = helpers.load_image(train_output_names[id])
+                input_image = utils.load_image(train_input_names[id])
+                output_image = utils.load_image(train_output_names[id])
 
                 with tf.device('/cpu:0'):
-                    input_image, output_image = helpers.data_augmentation(input_image, output_image)
-
+                    input_image, output_image = utils.data_augmentation(
+                        input_image, output_image, args)
 
                     # Prep the data. Make sure the labels are in one-hot format
                     input_image = np.float32(input_image) / 255.0
-                    output_image = np.float32(helpers.one_hot_it(label=output_image, label_values=label_values))
+                    output_image = np.float32(helpers.one_hot_it(label=output_image, label_values=label_info['label_values']))
                     
                     input_image_batch.append(np.expand_dims(input_image, axis=0))
                     output_image_batch.append(np.expand_dims(output_image, axis=0))
@@ -305,14 +305,14 @@ if args.mode == "train":
             f1_list = []
             iou_list = []
 
-            cm = np.zeros((num_classes, num_classes))
+            cm = np.zeros((label_info['num_classes'], label_info['num_classes']))
 
             # Do the validation on a small set of validation images
             for ind in val_indices:
                 
-                input_image = np.expand_dims(np.float32(load_image(val_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
-                gt = load_image(val_output_names[ind])[:args.crop_height, :args.crop_width]
-                gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_values))
+                input_image = np.expand_dims(np.float32(utils.load_image(val_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
+                gt = utils.load_image(val_output_names[ind])[:args.crop_height, :args.crop_width]
+                gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_info['label_values']))
 
                 # st = time.time()
 
@@ -321,10 +321,10 @@ if args.mode == "train":
 
                 output_image = np.array(output_image[0,:,:,:])
                 output_image = helpers.reverse_one_hot(output_image)
-                out_vis_image = helpers.colour_code_segmentation(output_image, label_values)
+                out_vis_image = helpers.colour_code_segmentation(output_image, label_info['label_values'])
 
                 cm += confusion_matrix(
-                    gt.ravel(), output_image.ravel(), labels=range(num_classes))
+                    gt.ravel(), output_image.ravel(), labels=range(label_info['num_classes']))
 
                 accuracy, class_accuracies, prec, rec, f1, iou = utils.evaluate_segmentation(
                     pred=output_image, label=gt,
@@ -414,12 +414,12 @@ if args.mode == "train":
 
 elif args.mode == 'val':
     #runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
-    helpers.run_dataset(
+    utils.run_dataset(
         args, 'val', val_input_names, val_output_names, label_info,
         sess, network, net_input)
 elif args.mode == 'test':
     #runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
-    helpers.run_dataset(
+    utils.run_dataset(
         args, 'test', test_input_names, test_output_names, label_info,
         sess, network, net_input)
 elif args.mode == 'predict':
@@ -433,7 +433,7 @@ elif args.mode == 'predict':
     print("Model -->", args.model)
     print("Crop Height -->", args.crop_height)
     print("Crop Width -->", args.crop_width)
-    print("Num Classes -->", num_classes)
+    print("Num Classes -->", label_info['num_classes'])
     print("Image -->", args.image)
     print("")
     
@@ -441,7 +441,7 @@ elif args.mode == 'predict':
     sys.stdout.flush()
 
     # to get the right aspect ratio of the output
-    loaded_image = load_image(args.image)
+    loaded_image = utils.load_image(args.image)
     height, width, channels = loaded_image.shape
     resize_height = int(height / (width / args.crop_width))
 
