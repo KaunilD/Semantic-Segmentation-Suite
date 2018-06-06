@@ -290,7 +290,9 @@ def make_best_ckpt_name(model_ckpt_name):
 
 def run_dataset(args, name, input_names, output_names, label_info, sess,
                 network, net_input):
-    print("\n***** Begin testing *****")
+    name = name.title()
+
+    print("\n***** Begin {} *****".format(name))
     print("Dataset -->", args.dataset)
     print("Model -->", args.model)
     print("Crop Height -->", args.crop_height)
@@ -299,8 +301,8 @@ def run_dataset(args, name, input_names, output_names, label_info, sess,
     print("")
 
     # Create directories if needed
-    if not os.path.isdir('%s' % (name.title())):
-        os.makedirs('%s' % (name.title()))
+    if not os.path.isdir('%s' % (name)):
+        os.makedirs('%s' % (name))
 
     target=open('%s/scores.csv'%('Val'),'w')
     target.write('name, avg_accuracy, precision, recall, f1 score, mean iou %s\n' % (label_info['class_names_string']))
@@ -330,7 +332,7 @@ def run_dataset(args, name, input_names, output_names, label_info, sess,
 
         output_image = np.array(output_image[0,:,:,:])
         output_image = helpers.reverse_one_hot(output_image)
-        out_vis_image = colour_code_segmentation(output_image, label_info['label_values'])
+        out_vis_image = helpers.colour_code_segmentation(output_image, label_info['label_values'])
 
         accuracy, class_accuracies, prec, rec, f1, iou = evaluate_segmentation(
             pred=output_image, label=gt,
@@ -349,7 +351,7 @@ def run_dataset(args, name, input_names, output_names, label_info, sess,
         f1_list.append(f1)
         iou_list.append(iou)
 
-        gt = colour_code_segmentation(gt, label_values)
+        gt = helpers.colour_code_segmentation(gt, label_info['label_values'])
 
         cv2.imwrite("%s/%s_pred.png"%("Val", file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
         cv2.imwrite("%s/%s_gt.png"%("Val", file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
