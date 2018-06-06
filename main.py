@@ -281,8 +281,10 @@ if args.mode == "train":
     # Do the training here
     for epoch in range(0, args.num_epochs):
 
-        if epoch == 10:
+        if best_f1_epoch - epoch > 2:
             lr = lr * 0.1
+
+        print('Epoch {:04d} learning rate: {}'.format(epoch+1, lr))
 
         current_losses = []
 
