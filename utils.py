@@ -288,8 +288,7 @@ def make_best_ckpt_name(model_ckpt_name):
     return ckpt_name
 
 
-def run_dataset(args, name, input_names, output_names, label_info, sess,
-                network, net_input):
+def run_dataset(args, name, input_names, output_names, label_info, runner):
     name = name.title()
 
     print("\n***** Begin {} *****".format(name))
@@ -324,11 +323,9 @@ def run_dataset(args, name, input_names, output_names, label_info, sess,
         gt = helpers.reverse_one_hot(helpers.one_hot_it(gt, label_info['label_values']))
 
         st = time.time()
-        output_image = sess.run(network,feed_dict={net_input:input_image})
-        #output_image = runner(input_image)
+        output_image = runner(input_image)
 
         run_times_list.append(time.time()-st)
-        print('run times', run_times_list)
 
         output_image = np.array(output_image[0,:,:,:])
         output_image = helpers.reverse_one_hot(output_image)
@@ -369,7 +366,7 @@ def run_dataset(args, name, input_names, output_names, label_info, sess,
     print("Average test accuracy = ", avg_score)
     print("Average per class test accuracies = \n")
     for index, item in enumerate(class_avg_scores):
-        print("%s = %f" % (class_names_list[index], item))
+        print("%s = %f" % (label_info['class_names_list'][index], item))
     print("Average precision = ", avg_precision)
     print("Average recall = ", avg_recall)
     print("Average F1 score = ", avg_f1)

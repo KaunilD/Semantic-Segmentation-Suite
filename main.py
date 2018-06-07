@@ -413,15 +413,13 @@ if args.mode == "train":
         scores_list = []
 
 elif args.mode == 'val':
-    #runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
+    runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
     utils.run_dataset(
-        args, 'val', val_input_names, val_output_names, label_info,
-        sess, network, net_input)
+        args, 'val', val_input_names, val_output_names, label_info, runner)
 elif args.mode == 'test':
-    #runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
+    runner = lambda input_image: sess.run(network, feed_dict={net_input:input_image})
     utils.run_dataset(
-        args, 'test', test_input_names, test_output_names, label_info,
-        sess, network, net_input)
+        args, 'test', test_input_names, test_output_names, label_info, runner)
 elif args.mode == 'predict':
     raise ValueError('Only implemented for CamVid')
 
