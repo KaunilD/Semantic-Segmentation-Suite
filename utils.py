@@ -350,8 +350,8 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
 
         gt = helpers.colour_code_segmentation(gt, label_info['label_values'])
 
-        cv2.imwrite("%s/%s_pred.png"%("Val", file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
-        cv2.imwrite("%s/%s_gt.png"%("Val", file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
+        cv2.imwrite("%s/%s_pred.png"%(name, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+        cv2.imwrite("%s/%s_gt.png"%(name, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
     target.close()
