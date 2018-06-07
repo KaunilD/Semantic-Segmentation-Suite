@@ -366,7 +366,7 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
     print("Average test accuracy = ", avg_score)
     print("Average per class test accuracies = \n")
     for index, item in enumerate(class_avg_scores):
-        print("%s = %f" % (label_info['class_names_list'][index], item))
+        print("%s = %f" % (label_info['class_names'][index], item))
     print("Average precision = ", avg_precision)
     print("Average recall = ", avg_recall)
     print("Average F1 score = ", avg_f1)
