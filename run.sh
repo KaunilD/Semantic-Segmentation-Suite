@@ -10,7 +10,7 @@ cd ${dataset_name}
 sed -i "s,INPUT_DIR,$input_dir,g" train.txt
 sed -i "s,INPUT_DIR,$input_dir,g" val.txt
 sed -i "s,INPUT_DIR,$input_dir,g" test.txt
-./prep_data.py
+python prep_data.py
 cd ..
 
 # Train the model.
