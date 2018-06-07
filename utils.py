@@ -303,7 +303,7 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
     if not os.path.isdir('%s' % (name)):
         os.makedirs('%s' % (name))
 
-    target=open('%s/scores.csv'%('Val'),'w')
+    target=open('%s/scores.csv'%(name),'w')
     target.write('name, avg_accuracy, precision, recall, f1 score, mean iou %s\n' % (label_info['class_names_string']))
     scores_list = []
     class_scores_list = []
