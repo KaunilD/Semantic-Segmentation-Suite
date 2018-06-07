@@ -53,7 +53,7 @@ parser.add_argument('--dataset', type=str, default="CamVid", help='Dataset you a
 parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped input image to network')
 parser.add_argument('--crop_width', type=int, default=512, help='Width of cropped input image to network')
 parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
-parser.add_argument('--num_val_images', type=int, default=10, help='The number of images to used for validations')
+parser.add_argument('--num_val_images', type=int, default=-1, help='The number of images to used for validations; default is -1 (all images in validation set)')
 parser.add_argument('--h_flip', type=str2bool, default=False, help='Whether to randomly flip the image horizontally for data augmentation')
 parser.add_argument('--v_flip', type=str2bool, default=False, help='Whether to randomly flip the image vertically for data augmentation')
 parser.add_argument('--brightness', type=float, default=None, help='Whether to randomly change the image brightness for data augmentation. Specifies the max bightness change.')
@@ -197,11 +197,13 @@ if args.mode == "train":
     # Which validation images do we want
     val_indices = []
     num_vals = min(args.num_val_images, len(val_input_names))
+    if num_vals == -1:
+        num_vals = len(val_input_names)
 
     # Set random seed to make sure models are validated on the same validation images.
     # So you can compare the results of different models more intuitively.
     random.seed(16)
-    val_indices=random.sample(range(0,len(val_input_names)),num_vals)
+    val_indices = random.sample(range(0, len(val_input_names)), num_vals)
 
     lr = args.learning_rate
 
@@ -211,7 +213,6 @@ if args.mode == "train":
 
     # Do the training here
     for epoch in range(0, args.num_epochs):
-
         if epoch - best_f1_epoch > 5:
             print('Early stopping best epoch {:d}, current {:d}'.format(
                 best_f1_epoch, epoch))
@@ -233,8 +234,6 @@ if args.mode == "train":
         st = time.time()
         epoch_st=time.time()
         for i in range(num_iters):
-            # st=time.time()
-            
             input_image_batch = []
             output_image_batch = [] 
 
