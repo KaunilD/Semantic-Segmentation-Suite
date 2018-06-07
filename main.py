@@ -212,12 +212,12 @@ if args.mode == "train":
     # Do the training here
     for epoch in range(0, args.num_epochs):
 
-        if best_f1_epoch - epoch > 5:
+        if epoch - best_f1_epoch > 5:
             print('Early stopping best epoch {:d}, current {:d}'.format(
                 best_f1_epoch, epoch))
             break
 
-        if best_f1_epoch - epoch > 2:
+        if epoch - best_f1_epoch > 2:
             lr = lr * 0.1
 
         print('Epoch {:04d} learning rate: {}'.format(epoch, lr))
@@ -256,15 +256,6 @@ if args.mode == "train":
                     input_image_batch.append(np.expand_dims(input_image, axis=0))
                     output_image_batch.append(np.expand_dims(output_image, axis=0))
 
-            # ***** THIS CAUSES A MEMORY LEAK AS NEW TENSORS KEEP GETTING CREATED *****
-            # input_image = tf.image.crop_to_bounding_box(input_image, offset_height=0, offset_width=0, 
-            #                                               target_height=args.crop_height, target_width=args.crop_width).eval(session=sess)
-            # output_image = tf.image.crop_to_bounding_box(output_image, offset_height=0, offset_width=0, 
-            #                                               target_height=args.crop_height, target_width=args.crop_width).eval(session=sess)
-            # ***** THIS CAUSES A MEMORY LEAK AS NEW TENSORS KEEP GETTING CREATED *****
-
-            # memory()
-            
             if args.batch_size == 1:
                 input_image_batch = input_image_batch[0]
                 output_image_batch = output_image_batch[0]
@@ -296,7 +287,6 @@ if args.mode == "train":
             print("Performing validation")
             target=open("%s/%04d/val_scores.csv"%("checkpoints",epoch),'w')
             target.write("name, avg_accuracy, precision, recall, f1 score, mean iou, %s\n" % (label_info['class_names_string']))
-
 
             scores_list = []
             class_scores_list = []
