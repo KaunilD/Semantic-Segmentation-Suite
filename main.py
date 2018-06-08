@@ -8,8 +8,6 @@ import time, datetime
 import argparse
 import random
 import os, sys
-import subprocess
-from glob import glob
 
 from modelutil.metrics import confusion_matrix, prfs, \
     convert_prfs_to_data_frame
@@ -161,10 +159,9 @@ if init_fn is not None:
 # Load a previous checkpoint if desired
 model_ckpt_name = utils.make_model_ckpt_name(args)
 if args.continue_training or not args.mode == "train":
-    best_checkpoint_name = utils.make_best_ckpt_name(model_ckpt_name)
-    print('Loading best model checkpoint {}'.format(best_checkpoint_name))
-    saver.restore(sess, best_checkpoint_name)
-    print('Loaded best model checkpoint {}'.format(best_checkpoint_name))
+    print('Loading model checkpoint {}'.format(model_ckpt_name))
+    saver.restore(sess, model_ckpt_name)
+    print('Loaded model checkpoint {}'.format(model_ckpt_name))
 
 avg_scores_per_epoch = []
 
@@ -376,19 +373,10 @@ if args.mode == "train":
             if new_f1 > best_f1:
                 print('New best F1 ({:.04f} > {:.04f})'.format(
                     new_f1, best_f1))
-                print('Saving checkpoint for this epoch')
+                print('Saving checkpoint')
                 best_f1 = new_f1
                 best_f1_epoch = epoch
-                best_f1_checkpoint = '%s/%04d/model.ckpt' % ('checkpoints', epoch)
-                saver.save(sess, best_f1_checkpoint)
-                for saved_file in glob(best_f1_checkpoint + '*'):
-                    saved_path, suffix = os.path.splitext(saved_file)
-                    dst = model_ckpt_name + suffix
-                    try:
-                        os.symlink(saved_file, dst)
-                    except Exception as e:
-                        os.unlink(dst)
-                        os.symlink(saved_file, dst)
+                saver.save(sess, model_ckpt_name)
 
         epoch_time=time.time()-epoch_st
         remain_time=epoch_time*(args.num_epochs-1-epoch)

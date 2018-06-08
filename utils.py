@@ -3,6 +3,7 @@ import sys
 import os
 from glob import glob
 import time
+import subprocess
 
 import cv2
 import numpy as np
@@ -274,18 +275,8 @@ def memory():
     print('Memory usage in GBs:', memoryUse)
 
 
-
-
-
 def make_model_ckpt_name(args):
     return "checkpoints/latest_model_" + args.model + "_" + args.dataset + ".ckpt"
-
-
-def make_best_ckpt_name(model_ckpt_name):
-    symlink_path = glob(model_ckpt_name + '*')[0]
-    link_target = os.readlink(symlink_path)
-    ckpt_name = os.path.splitext(link_target)[0]
-    return ckpt_name
 
 
 def run_dataset(args, name, input_names, output_names, label_info, runner):
