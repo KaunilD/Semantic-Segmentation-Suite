@@ -1,9 +1,10 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 input_dir=$1
 output_dir=$2
 params=$3
 
+dataset_name=$(echo $params | json dataset-name)
 ./prep-data.sh ${dataset_name} ${input_dir}
 
 model_name=$(echo $params | json model-name)
