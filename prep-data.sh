@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 dataset_name=$1
 input_dir=$2
