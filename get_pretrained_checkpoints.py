@@ -71,19 +71,19 @@ args = parser.parse_args()
 ###############################
 if args.model == "Res50" or args.model == "ALL":
     subprocess.check_output(['wget','http://download.tensorflow.org/models/resnet_v2_50_2017_04_14.tar.gz'])
-    subprocess.check_output(['tar', '-xvf', '--no-same-owner', 'resnet_v2_50_2017_04_14.tar.gz'])
+    subprocess.check_output(['tar', '--no-same-owner', '-xvf', 'resnet_v2_50_2017_04_14.tar.gz'])
     subprocess.check_output(['mv', 'resnet_v2_50.ckpt', 'models'])
     subprocess.check_output(['rm', 'resnet_v2_50_2017_04_14.tar.gz'])
 
 if args.model == "Res101" or args.model == "ALL":
     subprocess.check_output(['wget','http://download.tensorflow.org/models/resnet_v2_101_2017_04_14.tar.gz'])
-    subprocess.check_output(['tar', '-xvf', '--no-same-owner', 'resnet_v2_101_2017_04_14.tar.gz'])
+    subprocess.check_output(['tar', '--no-same-owner', '-xvf', 'resnet_v2_101_2017_04_14.tar.gz'])
     subprocess.check_output(['mv', 'resnet_v2_101.ckpt', 'models'])
     subprocess.check_output(['rm', 'resnet_v2_101_2017_04_14.tar.gz'])
 
 if args.model == "Res152" or args.model == "ALL":
     subprocess.check_output(['wget','http://download.tensorflow.org/models/resnet_v2_152_2017_04_14.tar.gz'])
-    subprocess.check_output(['tar', '-xvf', '--no-same-owner', 'resnet_v2_152_2017_04_14.tar.gz'])
+    subprocess.check_output(['tar', '--no-same-owner', '-xvf', 'resnet_v2_152_2017_04_14.tar.gz'])
     subprocess.check_output(['mv', 'resnet_v2_152.ckpt', 'models'])
     subprocess.check_output(['rm', 'resnet_v2_152_2017_04_14.tar.gz'])
 
