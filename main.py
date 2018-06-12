@@ -46,7 +46,7 @@ parser.add_argument('--validation_step', type=int, default=1, help='How often to
 parser.add_argument('--class_balancing', type=str2bool, default=False, help='Whether to use median frequency class weights to balance the classes in the loss')
 parser.add_argument(
     '--loss_func', type=str, default='cross_entropy',
-    options=['cross_entropy', 'lovasz'],
+    choices=['cross_entropy', 'lovasz'],
     help='Which loss function to use (cross_entropy or lovasz)')
 parser.add_argument('--image', type=str, default=None, help='The image you want to predict on. Only valid in "predict" mode.')
 parser.add_argument('--continue_training', type=str2bool, default=False, help='Whether to continue training from a checkpoint')
