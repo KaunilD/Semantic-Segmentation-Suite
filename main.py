@@ -15,7 +15,7 @@ from modelutil.metrics import confusion_matrix, prfs, \
 import helpers 
 import utils 
 
-sys.path.append("models")
+sys.path.append('models')
 from FC_DenseNet_Tiramisu import build_fc_densenet
 from Encoder_Decoder import build_encoder_decoder
 from RefineNet import build_refinenet
@@ -39,15 +39,18 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_epochs', type=int, default=300, help='Number of epochs to train for')
-parser.add_argument('--mode', type=str, default="train", help='Select "train", "test", or "predict" mode. \
+parser.add_argument('--mode', type=str, default='train', help='Select "train", "test", or "predict" mode. \
     Note that for prediction mode you have to specify an image to run the model on.')
 parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
 parser.add_argument('--validation_step', type=int, default=1, help='How often to perform validation (epochs)')
 parser.add_argument('--class_balancing', type=str2bool, default=False, help='Whether to use median frequency class weights to balance the classes in the loss')
-parser.add_argument('--loss_func', type=str, default="cross_entropy", help='Which loss function to use (cross_entropy or lovasz)')
+parser.add_argument(
+    '--loss_func', type=str, default='cross_entropy',
+    options=['cross_entropy', 'lovasz'],
+    help='Which loss function to use (cross_entropy or lovasz)')
 parser.add_argument('--image', type=str, default=None, help='The image you want to predict on. Only valid in "predict" mode.')
 parser.add_argument('--continue_training', type=str2bool, default=False, help='Whether to continue training from a checkpoint')
-parser.add_argument('--dataset', type=str, default="CamVid", help='Dataset you are using.')
+parser.add_argument('--dataset', type=str, default='CamVid', help='Dataset you are using.')
 parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped input image to network')
 parser.add_argument('--crop_width', type=int, default=512, help='Width of cropped input image to network')
 parser.add_argument('--crop', type=str2bool, default=False, help='Whether to crop')
@@ -57,7 +60,7 @@ parser.add_argument('--h_flip', type=str2bool, default=False, help='Whether to r
 parser.add_argument('--v_flip', type=str2bool, default=False, help='Whether to randomly flip the image vertically for data augmentation')
 parser.add_argument('--brightness', type=float, default=None, help='Whether to randomly change the image brightness for data augmentation. Specifies the max bightness change.')
 parser.add_argument('--rotation', type=float, default=None, help='Whether to randomly rotate the image for data augmentation. Specifies the max rotation angle.')
-parser.add_argument('--model', type=str, default="FC-DenseNet56", help='The model you are using. Currently supports:\
+parser.add_argument('--model', type=str, default='FC-DenseNet56', help='The model you are using. Currently supports:\
     FC-DenseNet56, FC-DenseNet67, FC-DenseNet103, Encoder-Decoder, Encoder-Decoder-Skip, RefineNet-Res50, RefineNet-Res101, RefineNet-Res152, \
     FRRN-A, FRRN-B, MobileUNet, MobileUNet-Skip, PSPNet-Res50, PSPNet-Res101, PSPNet-Res152, GCN-Res50, GCN-Res101, GCN-Res152, DeepLabV3-Res50 \
     DeepLabV3-Res101, DeepLabV3-Res152, DeepLabV3_plus-Res50, DeepLabV3_plus-Res101, DeepLabV3_plus-Res152, AdapNet, custom')
@@ -68,7 +71,7 @@ args = parser.parse_args()
 
 # Get the names of the classes so we can record the evaluation results
 label_info = helpers.get_label_info(
-    os.path.join(args.dataset, "class_dict.csv"))
+    os.path.join(args.dataset, 'class_dict.csv'))
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -77,15 +80,15 @@ sess=tf.Session(config=config)
 # Get the selected model. 
 # Some of them require pre-trained ResNet
 
-if "Res50" in args.model and not os.path.isfile("models/resnet_v2_50.ckpt"):
-    utils.download_checkpoints("Res50")
-if "Res101" in args.model and not os.path.isfile("models/resnet_v2_101.ckpt"):
-    utils.download_checkpoints("Res101")
-if "Res152" in args.model and not os.path.isfile("models/resnet_v2_152.ckpt"):
-    utils.download_checkpoints("Res152")
+if 'Res50' in args.model and not os.path.isfile('models/resnet_v2_50.ckpt'):
+    utils.download_checkpoints('Res50')
+if 'Res101' in args.model and not os.path.isfile('models/resnet_v2_101.ckpt'):
+    utils.download_checkpoints('Res101')
+if 'Res152' in args.model and not os.path.isfile('models/resnet_v2_152.ckpt'):
+    utils.download_checkpoints('Res152')
 
 # Compute your softmax cross entropy loss
-print("Preparing the model ...")
+print('Preparing the model ...')
 net_input = tf.placeholder(
     tf.float32,shape=[None,None,None,3])
 net_output = tf.placeholder(
@@ -93,52 +96,53 @@ net_output = tf.placeholder(
 
 network = None
 init_fn = None
-if args.model == "FC-DenseNet56" or args.model == "FC-DenseNet67" or args.model == "FC-DenseNet103":
+if args.model == 'FC-DenseNet56' or args.model == 'FC-DenseNet67' or args.model == 'FC-DenseNet103':
     network = build_fc_densenet(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "RefineNet-Res50" or args.model == "RefineNet-Res101" or args.model == "RefineNet-Res152":
+elif args.model == 'RefineNet-Res50' or args.model == 'RefineNet-Res101' or args.model == 'RefineNet-Res152':
     # RefineNet requires pre-trained ResNet weights
     network, init_fn = build_refinenet(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "FRRN-A" or args.model == "FRRN-B":
+elif args.model == 'FRRN-A' or args.model == 'FRRN-B':
     network = build_frrn(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "Encoder-Decoder" or args.model == "Encoder-Decoder-Skip":
+elif args.model == 'Encoder-Decoder' or args.model == 'Encoder-Decoder-Skip':
     network = build_encoder_decoder(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "MobileUNet" or args.model == "MobileUNet-Skip":
+elif args.model == 'MobileUNet' or args.model == 'MobileUNet-Skip':
     network = build_mobile_unet(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "PSPNet-Res50" or args.model == "PSPNet-Res101" or args.model == "PSPNet-Res152":
+elif args.model == 'PSPNet-Res50' or args.model == 'PSPNet-Res101' or args.model == 'PSPNet-Res152':
     # Image size is required for PSPNet
     # PSPNet requires pre-trained ResNet weights
     network, init_fn = build_pspnet(net_input, label_size=[args.crop_height, args.crop_width], preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "GCN-Res50" or args.model == "GCN-Res101" or args.model == "GCN-Res152":
+elif args.model == 'GCN-Res50' or args.model == 'GCN-Res101' or args.model == 'GCN-Res152':
     # GCN requires pre-trained ResNet weights
     network, init_fn = build_gcn(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "DeepLabV3-Res50" or args.model == "DeepLabV3-Res101" or args.model == "DeepLabV3-Res152":
+elif args.model == 'DeepLabV3-Res50' or args.model == 'DeepLabV3-Res101' or args.model == 'DeepLabV3-Res152':
     # DeepLabV requires pre-trained ResNet weights
     network, init_fn = build_deeplabv3(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "DeepLabV3_plus-Res50" or args.model == "DeepLabV3_plus-Res101" or args.model == "DeepLabV3_plus-Res152":
+elif args.model == 'DeepLabV3_plus-Res50' or args.model == 'DeepLabV3_plus-Res101' or args.model == 'DeepLabV3_plus-Res152':
     # DeepLabV3+ requires pre-trained ResNet weights
     network, init_fn = build_deeplabv3_plus(net_input, preset_model = args.model, num_classes=label_info['num_classes'])
-elif args.model == "AdapNet":
+elif args.model == 'AdapNet':
     network = build_adaptnet(net_input, num_classes=label_info['num_classes'])
-elif args.model == "custom":
+elif args.model == 'custom':
     network = build_custom(net_input, label_info['num_classes'])
 else:
-    raise ValueError("Error: the model %d is not available. Try checking which models are available using the command python main.py --help")
+    raise ValueError('Error: the model %d is not available. Try checking which models are available using the command python main.py --help')
 
 
 losses = None
 if args.class_balancing:
-    print("Computing class weights for", args.dataset, "...")
-    class_weights = utils.compute_class_weights(labels_dir=args.dataset + "/train_labels", label_values=label_values)
+    print('Computing class weights for', args.dataset, '...')
+    class_weights = utils.compute_class_weights(labels_dir=args.dataset +
+            '/train_labels', label_values=label_info['label_values'])
     unweighted_loss = None
-    if args.loss_func == "cross_entropy":
+    if args.loss_func == 'cross_entropy':
         unweighted_loss = tf.nn.softmax_cross_entropy_with_logits(logits=network, labels=net_output)
-    elif args.loss_func == "lovasz":
+    elif args.loss_func == 'lovasz':
         unweighted_loss = utils.lovasz_softmax(probas=network, labels=net_output)
     losses = unweighted_loss * class_weights
 else:
-    if args.loss_func == "cross_entropy":
+    if args.loss_func == 'cross_entropy':
         losses = tf.nn.softmax_cross_entropy_with_logits(logits=network, labels=net_output)
-    elif args.loss_func == "lovasz":
+    elif args.loss_func == 'lovasz':
         losses = utils.lovasz_softmax(probas=network, labels=net_output)
 loss = tf.reduce_mean(losses)
 
@@ -159,7 +163,7 @@ if init_fn is not None:
 
 # Load a previous checkpoint if desired
 model_ckpt_name = utils.make_model_ckpt_name(args)
-if args.continue_training or not args.mode == "train":
+if args.continue_training or not args.mode == 'train':
     print('Loading model checkpoint {}'.format(model_ckpt_name))
     saver.restore(sess, model_ckpt_name)
     print('Loaded model checkpoint {}'.format(model_ckpt_name))
@@ -167,28 +171,28 @@ if args.continue_training or not args.mode == "train":
 avg_scores_per_epoch = []
 
 # Load the data
-print("Loading the data ...")
+print('Loading the data ...')
 train_input_names, train_output_names, \
     val_input_names, val_output_names, \
     test_input_names, test_output_names = utils.prepare_data(args.dataset)
 
-if args.mode == "train":
+if args.mode == 'train':
 
-    print("\n***** Begin training *****")
-    print("Dataset -->", args.dataset)
-    print("Model -->", args.model)
-    print("Crop Height -->", args.crop_height)
-    print("Crop Width -->", args.crop_width)
-    print("Num Epochs -->", args.num_epochs)
-    print("Batch Size -->", args.batch_size)
-    print("Num Classes -->", label_info['num_classes'])
+    print('\n***** Begin training *****')
+    print('Dataset -->', args.dataset)
+    print('Model -->', args.model)
+    print('Crop Height -->', args.crop_height)
+    print('Crop Width -->', args.crop_width)
+    print('Num Epochs -->', args.num_epochs)
+    print('Batch Size -->', args.batch_size)
+    print('Num Classes -->', label_info['num_classes'])
 
-    print("Data Augmentation:")
-    print("\tVertical Flip -->", args.v_flip)
-    print("\tHorizontal Flip -->", args.h_flip)
-    print("\tBrightness Alteration -->", args.brightness)
-    print("\tRotation -->", args.rotation)
-    print("")
+    print('Data Augmentation:')
+    print('\tVertical Flip -->', args.v_flip)
+    print('\tHorizontal Flip -->', args.h_flip)
+    print('\tBrightness Alteration -->', args.brightness)
+    print('\tRotation -->', args.rotation)
+    print('')
 
     avg_loss_per_epoch = []
 
@@ -269,7 +273,7 @@ if args.mode == "train":
             current_losses.append(current)
             cnt = cnt + args.batch_size
             if cnt % 20 == 0:
-                string_print = "Epoch = %d Count = %d Current_Loss = %.4f Time = %.2f"%(epoch,cnt,current,time.time()-st)
+                string_print = 'Epoch = %d Count = %d Current_Loss = %.4f Time = %.2f'%(epoch,cnt,current,time.time()-st)
                 utils.LOG(string_print)
                 st = time.time()
 
@@ -277,13 +281,13 @@ if args.mode == "train":
         avg_loss_per_epoch.append(mean_loss)
         
         # Create directories if needed
-        if not os.path.isdir("%s/%04d"%("checkpoints",epoch)):
-            os.makedirs("%s/%04d"%("checkpoints",epoch))
+        if not os.path.isdir('%s/%04d'%('checkpoints',epoch)):
+            os.makedirs('%s/%04d'%('checkpoints',epoch))
 
         if epoch % args.validation_step == 0:
-            print("Performing validation")
-            target=open("%s/%04d/val_scores.csv"%("checkpoints",epoch),'w')
-            target.write("name, avg_accuracy, precision, recall, f1 score, mean iou, %s\n" % (label_info['class_names_string']))
+            print('Performing validation')
+            target=open('%s/%04d/val_scores.csv'%('checkpoints',epoch),'w')
+            target.write('name, avg_accuracy, precision, recall, f1 score, mean iou, %s\n' % (label_info['class_names_string']))
 
             scores_list = []
             class_scores_list = []
@@ -318,10 +322,10 @@ if args.mode == "train":
                     num_classes=label_info['num_classes'], score_averaging=args.score_averaging)
             
                 file_name = utils.filepath_to_name(val_input_names[ind])
-                target.write("%s, %f, %f, %f, %f, %f"%(file_name, accuracy, prec, rec, f1, iou))
+                target.write('%s, %f, %f, %f, %f, %f'%(file_name, accuracy, prec, rec, f1, iou))
                 for item in class_accuracies:
-                    target.write(", %f"%(item))
-                target.write("\n")
+                    target.write(', %f'%(item))
+                target.write('\n')
 
                 scores_list.append(accuracy)
                 class_scores_list.append(class_accuracies)
@@ -335,8 +339,8 @@ if args.mode == "train":
      
                 file_name = os.path.basename(val_input_names[ind])
                 file_name = os.path.splitext(file_name)[0]
-                cv2.imwrite("%s/%04d/%s_pred.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
-                cv2.imwrite("%s/%04d/%s_gt.png"%("checkpoints",epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
+                cv2.imwrite('%s/%04d/%s_pred.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+                cv2.imwrite('%s/%04d/%s_gt.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
             target.close()
@@ -361,15 +365,15 @@ if args.mode == "train":
             avg_f1 = np.mean(f1_list)
             avg_iou = np.mean(iou_list)
 
-            print("\nAverage validation accuracy for epoch # %04d = %f"% (epoch, avg_score))
-            print("Average per class validation accuracies for epoch # %04d:"% (epoch))
+            print('\nAverage validation accuracy for epoch # %04d = %f'% (epoch, avg_score))
+            print('Average per class validation accuracies for epoch # %04d:'% (epoch))
             for index, item in enumerate(class_avg_scores):
-                print("%s = %f" % (label_info['class_names'][index], item))
-            print("Validation precision = ", avg_precision)
-            print("Validation recall = ", avg_recall)
-            print("Validation F1 score = ", avg_f1)
-            print("Validation F1 score (overall) = ", new_f1)
-            print("Validation IoU score = ", avg_iou)
+                print('%s = %f' % (label_info['class_names'][index], item))
+            print('Validation precision = ', avg_precision)
+            print('Validation recall = ', avg_recall)
+            print('Validation F1 score = ', avg_f1)
+            print('Validation F1 score (overall) = ', new_f1)
+            print('Validation IoU score = ', avg_iou)
 
             if new_f1 > best_f1:
                 print('New best F1 ({:.04f} > {:.04f})'.format(
@@ -384,9 +388,9 @@ if args.mode == "train":
         m, s = divmod(remain_time, 60)
         h, m = divmod(m, 60)
         if s!=0:
-            train_time="Remaining training time = %d hours %d minutes %d seconds\n"%(h,m,s)
+            train_time='Remaining training time = %d hours %d minutes %d seconds\n'%(h,m,s)
         else:
-            train_time="Remaining training time : Training completed.\n"
+            train_time='Remaining training time : Training completed.\n'
         utils.LOG(train_time)
         scores_list = []
 
@@ -402,18 +406,18 @@ elif args.mode == 'predict':
     raise ValueError('Only implemented for CamVid')
 
     if args.image is None:
-        ValueError("You must pass an image path when using prediction mode.")
+        ValueError('You must pass an image path when using prediction mode.')
 
-    print("\n***** Begin prediction *****")
-    print("Dataset -->", args.dataset)
-    print("Model -->", args.model)
-    print("Crop Height -->", args.crop_height)
-    print("Crop Width -->", args.crop_width)
-    print("Num Classes -->", label_info['num_classes'])
-    print("Image -->", args.image)
-    print("")
+    print('\n***** Begin prediction *****')
+    print('Dataset -->', args.dataset)
+    print('Model -->', args.model)
+    print('Crop Height -->', args.crop_height)
+    print('Crop Width -->', args.crop_width)
+    print('Num Classes -->', label_info['num_classes'])
+    print('Image -->', args.image)
+    print('')
     
-    sys.stdout.write("Testing image " + args.image)
+    sys.stdout.write('Testing image ' + args.image)
     sys.stdout.flush()
 
     # to get the right aspect ratio of the output
@@ -433,15 +437,15 @@ elif args.mode == 'predict':
     output_image = helpers.reverse_one_hot(output_image)
 
     # this needs to get generalized
-    label_info = helpers.get_label_info(os.path.join("CamVid", "class_dict.csv"))
+    label_info = helpers.get_label_info(os.path.join('CamVid', 'class_dict.csv'))
 
     out_vis_image = helpers.colour_code_segmentation(output_image, label_info['label_values'])
     file_name = utils.filepath_to_name(args.image)
-    cv2.imwrite("%s/%s_pred.png"%("Predict", file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+    cv2.imwrite('%s/%s_pred.png'%('Predict', file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
 
-    print("")
-    print("Finished!")
-    print("Wrote image " + "%s/%s_pred.png"%("Test", file_name))
+    print('')
+    print('Finished!')
+    print('Wrote image ' + '%s/%s_pred.png'%('Test', file_name))
 
 else:
-    ValueError("Invalid mode selected.")
+    ValueError('Invalid mode selected.')
