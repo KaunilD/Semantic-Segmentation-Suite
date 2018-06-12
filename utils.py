@@ -19,6 +19,9 @@ from sklearn.metrics import precision_score, \
     recall_score, confusion_matrix, classification_report, \
     accuracy_score, f1_score
 
+from modelutil.metrics import confusion_matrix, prfs, \
+    convert_prfs_to_data_frame
+
 import helpers
 
 
@@ -304,6 +307,8 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
     iou_list = []
     run_times_list = []
 
+    cm = np.zeros((label_info['num_classes'], label_info['num_classes']))
+
     # Run testing on ALL test images
     for ind in range(len(input_names)):
         sys.stdout.write('\rRunning test image %d / %d' % (ind+1, len(input_names)))
@@ -321,6 +326,9 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
         output_image = np.array(output_image[0,:,:,:])
         output_image = helpers.reverse_one_hot(output_image)
         out_vis_image = helpers.colour_code_segmentation(output_image, label_info['label_values'])
+
+        cm += confusion_matrix(
+            gt.ravel(), output_image.ravel(), labels=range(label_info['num_classes']))
 
         accuracy, class_accuracies, prec, rec, f1, iou = evaluate_segmentation(
             pred=output_image, label=gt,
@@ -346,6 +354,12 @@ def run_dataset(args, name, input_names, output_names, label_info, runner):
 
 
     target.close()
+
+    prfs_df = convert_prfs_to_data_frame(prfs(cm),
+        label_info['class_names'])
+    prfs_df['Mode'] = name
+    prfs_df['Epoch'] = np.nan
+    print(prfs_df)
 
     avg_score = np.mean(scores_list)
     class_avg_scores = np.mean(class_scores_list, axis=0)
