@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import numbers
 import tensorflow as tf
 from tensorflow.contrib import slim
 import numpy as np
@@ -7,8 +8,19 @@ import resnet_v2
 import os, sys
 
 
-def Upsampling(inputs,scale):
-    return tf.image.resize_bilinear(inputs, size=[tf.shape(inputs)[1]*scale,  tf.shape(inputs)[2]*scale])
+def Upsampling(inputs, size=None, target_tensor=None):
+    assert (size is not None or target_tensor is not None)
+    assert ((size is not None) != (target_tensor is not None))
+    if target_tensor is not None:
+        size = [tf.shape(target_tensor)[1], tf.shape(target_tensor)[2]]
+    elif isinstance(size, numbers.Integral):
+        size = [tf.shape(inputs)[1]*size, tf.shape(inputs)[2]*size]
+    result = tf.image.resize_bilinear(inputs, size=size)
+    return result
+
+
+#def Upsampling(inputs,scale):
+#    return tf.image.resize_bilinear(inputs, size=[tf.shape(inputs)[1]*scale,  tf.shape(inputs)[2]*scale])
 
 def ConvBlock(inputs, n_filters, kernel_size=[3, 3], stride=1):
     """
@@ -63,6 +75,8 @@ def MultiscaleBlock_1(inputs, filters_1, filters_2, filters_3, p, d):
 
     net = tf.nn.relu(slim.batch_norm(net, fused=True))
     net = slim.conv2d(net, filters_2, [1, 1], activation_fn=None, normalizer_fn=None)
+
+    net = Upsampling(net, target_tensor=inputs)
 
     net = tf.add(inputs, net)
 
@@ -135,14 +149,16 @@ def build_adaptnet(inputs, num_classes):
     net = MultiscaleBlock_1(net, filters_1=512, filters_2=2048, filters_3=512, p=2, d=16)
 
     net = ConvBlock(net, n_filters=12, kernel_size=[1, 1])
-    net = Upsampling(net, scale=2)
+    net = Upsampling(net, size=2)
+
+    if tf.shape(net)[1] != tf.shape(skip_connection)[1] or tf.shape(net)[2] != tf.shape(skip_connection)[2]:
+        size = [tf.shape(skip_connection)[1], tf.shape(skip_connection)[2]]
+        net = tf.image.resize_images(net, size=size)
 
     net = tf.add(skip_connection, net)
 
-    net = Upsampling(net, scale=8)
+    net = Upsampling(net, target_tensor=inputs)
 
-
-    
     net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, scope='logits')
 
     return net
