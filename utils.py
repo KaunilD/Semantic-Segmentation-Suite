@@ -416,7 +416,8 @@ def load_image(path):
 
 def data_augmentation(input_image, output_image, args):
     # Data augmentation
-    input_image, output_image = random_crop(input_image, output_image, args.crop_height, args.crop_width)
+    if args.crop:
+        input_image, output_image = random_crop(input_image, output_image, args.crop_height, args.crop_width)
 
     if args.h_flip and random.randint(0,1):
         input_image = cv2.flip(input_image, 1)
