@@ -3,8 +3,9 @@ from tensorflow.contrib import slim
 import resnet_v2
 import os, sys
 
-def Upsampling(inputs,scale):
-    return tf.image.resize_bilinear(inputs, size=[tf.shape(inputs)[1]*scale,  tf.shape(inputs)[2]*scale])
+
+from utils import Resizing
+
 
 
 def ConvUpscaleBlock(inputs, n_filters, kernel_size=[3, 3], scale=2):
@@ -87,18 +88,24 @@ def build_gcn(inputs, num_classes, preset_model='GCN-Res101', weight_decay=1e-5,
 
     down_4 = GlobalConvBlock(res[1], n_filters=21, size=3)
     down_4 = BoundaryRefinementBlock(down_4, n_filters=21, kernel_size=[3, 3])
+    # Resizing here might be suboptimal.
+    down_4 = Resizing(down_5, target_tensor=down_5, method=tf.image.ResizeMethod.BILINEAR)
     down_4 = tf.add(down_4, down_5)
     down_4 = BoundaryRefinementBlock(down_4, n_filters=21, kernel_size=[3, 3])
     down_4 = ConvUpscaleBlock(down_4, n_filters=21, kernel_size=[3, 3], scale=2)
 
     down_3 = GlobalConvBlock(res[2], n_filters=21, size=3)
     down_3 = BoundaryRefinementBlock(down_3, n_filters=21, kernel_size=[3, 3])
+    # Resizing here might be suboptimal.
+    down_3 = Resizing(down_3, target_tensor=down_4, method=tf.image.ResizeMethod.BILINEAR)
     down_3 = tf.add(down_3, down_4)
     down_3 = BoundaryRefinementBlock(down_3, n_filters=21, kernel_size=[3, 3])
     down_3 = ConvUpscaleBlock(down_3, n_filters=21, kernel_size=[3, 3], scale=2)
 
     down_2 = GlobalConvBlock(res[3], n_filters=21, size=3)
     down_2 = BoundaryRefinementBlock(down_2, n_filters=21, kernel_size=[3, 3])
+    # Resizing here might be suboptimal.
+    down_2 = Resizing(down_2, target_tensor=down_3, method=tf.image.ResizeMethod.BILINEAR)
     down_2 = tf.add(down_2, down_3)
     down_2 = BoundaryRefinementBlock(down_2, n_filters=21, kernel_size=[3, 3])
     down_2 = ConvUpscaleBlock(down_2, n_filters=21, kernel_size=[3, 3], scale=2)
@@ -108,6 +115,9 @@ def build_gcn(inputs, num_classes, preset_model='GCN-Res101', weight_decay=1e-5,
     net = BoundaryRefinementBlock(net, n_filters=21, kernel_size=[3, 3])
 
     net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, scope='logits')
+
+    # Resizing here might be suboptimal.
+    net = Resizing(net, target_tensor=inputs, method=tf.image.ResizeMethod.BILINEAR)
 
     return net, init_fn
 
