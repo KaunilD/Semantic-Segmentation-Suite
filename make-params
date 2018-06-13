@@ -18,7 +18,7 @@ output = []
 
 iter = itertools.product(models, learning_rates, loss_funcs)
 
-for model_name, loss_func, learning_rate in iter:
+for model_name, learning_rate, loss_func in iter:
     d = {
         'model-name': model_name,
         'loss-func': loss_func,
