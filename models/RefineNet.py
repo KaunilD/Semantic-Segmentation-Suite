@@ -3,6 +3,9 @@ from tensorflow.contrib import slim
 import resnet_v2
 import os, sys
 
+from utils import Resizing
+
+
 def Upsampling(inputs,scale):
     return tf.image.resize_bilinear(inputs, size=[tf.shape(inputs)[1]*scale,  tf.shape(inputs)[2]*scale])
 
@@ -103,7 +106,10 @@ def MultiResolutionFusion(high_inputs=None,low_inputs=None,n_filters=256):
         conv_low = slim.conv2d(low_inputs, n_filters, 3, activation_fn=None)
         conv_high = slim.conv2d(high_inputs, n_filters, 3, activation_fn=None)
 
-        conv_low_up = Upsampling(conv_low,2)
+        #conv_low_up = Upsampling(conv_low,2)
+        conv_low_up = Resizing(
+            conv_low, target_tensor=conv_high,
+            method=tf.image.ResizeMethod.BILINEAR)
 
         return tf.add(conv_low_up, conv_high)
 
