@@ -4,6 +4,9 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
 
+from utils import Resizing
+
+
 def preact_conv(inputs, n_filters, kernel_size=[3, 3], dropout_p=0.2):
     """
     Basic pre-activation layer for DenseNets
@@ -60,6 +63,9 @@ def TransitionUp(block_to_upsample, skip_connection, n_filters_keep, scope=None)
     # Upsample
     l = slim.conv2d_transpose(block_to_upsample, n_filters_keep, kernel_size=[3, 3], stride=[2, 2], activation_fn=None)
     # Concatenate with skip connection
+    l = Resizing(
+        l, target_tensor=skip_connection,
+        method=tf.image.ResizeMethod.BILINEAR)
     l = tf.concat([l, skip_connection], axis=-1)
     return l
 
