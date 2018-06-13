@@ -1,21 +1,28 @@
 #!/usr/bin/env python
 
+import itertools
 import json
 
-models = [
-    'FC-DenseNet56', 'Encoder-Decoder', 'Encoder-Decoder-Skip',
-    'RefineNet-Res50', 'FRRN-A', 'FRRN-B', 'MobileUNet',
-    'MobileUNet-Skip', 'PSPNet-Res50', 'GCN-Res50', 'DeepLabV3-Res50
-    DeepLabV3_plus-Res50', 'AdapNet'
-]
 model_s3_uri = 's3://nad-sandbox/jobs/Semantic-Segmentation-Suite/code'
 dataset_name = 'dataset-HT'
+models = [
+    'FC-DenseNet56', 'Encoder-Decoder-Skip',
+    'RefineNet-Res50', 'FRRN-A', 'FRRN-B',
+    'MobileUNet-Skip', 'PSPNet-Res50', 'GCN-Res50', 'DeepLabV3-Res50',
+    'DeepLabV3_plus-Res50', 'AdapNet'
+]
+loss_funcs = ['cross_entropy']
+learning_rates = [0.003, 0.001, 0.0003, 0.0001]
 
 output = []
 
-for model in models[2:]:
+iter = itertools.product(models, learning_rates, loss_funcs)
+
+for model_name, loss_func, learning_rate in iter:
     d = {
-        'model-name': model,
+        'model-name': model_name,
+        'loss-func': loss_func,
+        'learning-rate': learning_rate,
         'model-s3-uri': model_s3_uri,
         'dataset-name': dataset_name
     }
@@ -23,3 +30,4 @@ for model in models[2:]:
     output.append(d)
 
 print(json.dumps(output))
+print(len(output))
