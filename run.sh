@@ -5,12 +5,14 @@ output_dir=$2
 params=$3
 
 dataset_name=$(echo $params | json dataset-name)
-./prep-data.sh ${dataset_name} ${input_dir}
+if [ ! -d ${dataset_name}/train ]
+then
+    ./prep-data.sh ${dataset_name} ${input_dir}
+fi
 
 model_name=$(echo $params | json model-name)
 
 function update_extra_args {
-    set -x
     params=$1
     extra_args=$2
     keyword=$3
