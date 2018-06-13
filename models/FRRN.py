@@ -4,27 +4,19 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 import resnet_v1
 
+from utils import Resizing
+
 
 def Upsampling(inputs, size=None, target_tensor=None):
-    assert (size is not None or target_tensor is not None)
-    assert ((size is not None) != (target_tensor is not None))
-    if target_tensor is not None:
-        size = [tf.shape(target_tensor)[1], tf.shape(target_tensor)[2]]
-    elif isinstance(size, numbers.Integral):
-        size = [tf.shape(inputs)[1]*size, tf.shape(inputs)[2]*size]
-    result = tf.image.resize_nearest_neighbor(inputs, size=size)
-    return result
+    return Resizing(inputs,
+                    size=size, target_tensor=target_tensor,
+                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
 
 def Unpooling(inputs, size=None, target_tensor=None):
-    assert (size is not None or target_tensor is not None)
-    assert ((size is not None) != (target_tensor is not None))
-    if target_tensor is not None:
-        size = [tf.shape(target_tensor)[1], tf.shape(target_tensor)[2]]
-    elif isinstance(size, numbers.Integral):
-        size = [tf.shape(inputs)[1]*size, tf.shape(inputs)[2]*size]
-    result = tf.image.resize_bilinear(inputs, size=size)
-    return result
+    return Resizing(inputs,
+                    size=size, target_tensor=target_tensor,
+                    method=tf.image.ResizeMethod.BILINEAR)
 
 
 def ResidualUnit(inputs, n_filters=48, filter_size=3):

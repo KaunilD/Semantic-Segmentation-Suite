@@ -4,6 +4,7 @@ import os
 from glob import glob
 import time
 import subprocess
+import numbers
 
 import cv2
 import numpy as np
@@ -441,3 +442,18 @@ def data_augmentation(input_image, output_image, args):
 
 def download_checkpoints(model_name):
     subprocess.check_output(["python", "get_pretrained_checkpoints.py", "--model=" + model_name])
+
+
+def Resizing(inputs, size=None, target_tensor=None, method=0):
+    assert (size is not None or target_tensor is not None)
+    assert ((size is not None) != (target_tensor is not None))
+    if target_tensor is not None:
+        size = [tf.shape(target_tensor)[1], tf.shape(target_tensor)[2]]
+    else:
+        if isinstance(size, numbers.Integral):
+            size = [tf.shape(inputs)[1]*size, tf.shape(inputs)[2]*size]
+        else:
+            raise ValueError('`size` should be an integer but is {}'.format(
+                str(type(size))))
+    result = tf.image.resize_images(inputs, size=size, method=method)
+    return result

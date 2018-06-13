@@ -4,6 +4,9 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
 
+from utils import Resizing
+
+
 def conv_block(inputs, n_filters, kernel_size=[3, 3], dropout_p=0.0):
     """
     Basic conv block for Encoder-Decoder
@@ -89,8 +92,7 @@ def build_encoder_decoder(inputs, num_classes, preset_model = "Encoder-Decoder",
     net = conv_block(net, 512)
     net = conv_block(net, 512)
     if has_skip:
-        size = [tf.shape(skip_4)[1], tf.shape(skip_4)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_4, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_4)
 
     net = conv_transpose_block(net, 512)
@@ -98,8 +100,7 @@ def build_encoder_decoder(inputs, num_classes, preset_model = "Encoder-Decoder",
     net = conv_block(net, 512)
     net = conv_block(net, 256)
     if has_skip:
-        size = [tf.shape(skip_3)[1], tf.shape(skip_3)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_3, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_3)
 
     net = conv_transpose_block(net, 256)
@@ -107,16 +108,14 @@ def build_encoder_decoder(inputs, num_classes, preset_model = "Encoder-Decoder",
     net = conv_block(net, 256)
     net = conv_block(net, 128)
     if has_skip:
-        size = [tf.shape(skip_2)[1], tf.shape(skip_2)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_2, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_2)
 
     net = conv_transpose_block(net, 128)
     net = conv_block(net, 128)
     net = conv_block(net, 64)
     if has_skip:
-        size = [tf.shape(skip_1)[1], tf.shape(skip_1)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_1, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_1)
 
     net = conv_transpose_block(net, 64)
@@ -129,7 +128,6 @@ def build_encoder_decoder(inputs, num_classes, preset_model = "Encoder-Decoder",
     net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, scope='logits')
 
     if tf.shape(net)[1] != tf.shape(inputs)[1] or tf.shape(net)[2] != tf.shape(inputs)[2]:
-        size = [tf.shape(inputs)[1], tf.shape(inputs)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=inputs, method=tf.image.ResizeMethod.BILINEAR)
 
     return net
