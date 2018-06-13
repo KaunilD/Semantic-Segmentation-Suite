@@ -3,6 +3,9 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 import numpy as np
 
+from utils import Resizing
+
+
 def ConvBlock(inputs, n_filters, kernel_size=[3, 3]):
     """
     Builds the conv block for MobileNets
@@ -87,8 +90,7 @@ def build_mobile_unet(inputs, preset_model, num_classes):
     net = DepthwiseSeparableConvBlock(net, 512)
     net = DepthwiseSeparableConvBlock(net, 512)
     if has_skip:
-        size = [tf.shape(skip_4)[1], tf.shape(skip_4)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_4, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_4)
 
     net = conv_transpose_block(net, 512)
@@ -96,8 +98,7 @@ def build_mobile_unet(inputs, preset_model, num_classes):
     net = DepthwiseSeparableConvBlock(net, 512)
     net = DepthwiseSeparableConvBlock(net, 256)
     if has_skip:
-        size = [tf.shape(skip_3)[1], tf.shape(skip_3)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_3, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_3)
 
     net = conv_transpose_block(net, 256)
@@ -105,16 +106,14 @@ def build_mobile_unet(inputs, preset_model, num_classes):
     net = DepthwiseSeparableConvBlock(net, 256)
     net = DepthwiseSeparableConvBlock(net, 128)
     if has_skip:
-        size = [tf.shape(skip_2)[1], tf.shape(skip_2)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_2, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_2)
 
     net = conv_transpose_block(net, 128)
     net = DepthwiseSeparableConvBlock(net, 128)
     net = DepthwiseSeparableConvBlock(net, 64)
     if has_skip:
-        size = [tf.shape(skip_1)[1], tf.shape(skip_1)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=skip_1, method=tf.image.ResizeMethod.BILINEAR)
         net = tf.add(net, skip_1)
 
     net = conv_transpose_block(net, 64)
@@ -127,7 +126,6 @@ def build_mobile_unet(inputs, preset_model, num_classes):
     net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None, scope='logits')
 
     if tf.shape(net)[1] != tf.shape(inputs)[1] or tf.shape(net)[2] != tf.shape(inputs)[2]:
-        size = [tf.shape(inputs)[1], tf.shape(inputs)[2]]
-        net = tf.image.resize_images(net, size=size)
+        net = Resizing(net, target_tensor=inputs, method=tf.image.ResizeMethod.BILINEAR)
 
     return net
