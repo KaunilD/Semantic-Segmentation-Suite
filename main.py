@@ -65,6 +65,7 @@ parser.add_argument('--model', type=str, default='FC-DenseNet56', help='The mode
     FRRN-A, FRRN-B, MobileUNet, MobileUNet-Skip, PSPNet-Res50, PSPNet-Res101, PSPNet-Res152, GCN-Res50, GCN-Res101, GCN-Res152, DeepLabV3-Res50 \
     DeepLabV3-Res101, DeepLabV3-Res152, DeepLabV3_plus-Res50, DeepLabV3_plus-Res101, DeepLabV3_plus-Res152, AdapNet, custom')
 parser.add_argument('--learning_rate', type=float, default=0.0001, help='The learning rate')
+parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'sgd'], help='The optimizer')
 parser.add_argument('--score_averaging', type=str, default='macro', help='The score weighting type (see e.g. `sklearn.metrics.accuracy_score`); default is "macro".')
 
 args = parser.parse_args()
@@ -148,7 +149,11 @@ loss = tf.reduce_mean(losses)
 
 
 learning_rate = tf.placeholder(tf.float32, shape=[])
-opt = tf.train.AdamOptimizer(learning_rate).minimize(loss, var_list=[var for var in tf.trainable_variables()])
+
+opt = {
+    'adam': tf.train.AdamOptimizer(learning_rate).minimize(loss, var_list=[var for var in tf.trainable_variables()]),
+    'sgd': tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, var_list=[var for var in tf.trainable_variables()])
+}[args.optimizer]
 
 saver=tf.train.Saver(max_to_keep=1000, save_relative_paths=True)
 sess.run(tf.global_variables_initializer())
