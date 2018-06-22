@@ -56,6 +56,7 @@ parser.add_argument('--crop_width', type=int, default=512, help='Width of croppe
 parser.add_argument('--crop', type=str2bool, default=False, help='Whether to crop')
 parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
 parser.add_argument('--num_val_images', type=int, default=-1, help='The number of images to used for validations; default is -1 (all images in validation set)')
+parser.add_argument('--num_val_images_save', type=int, default=10, help='The number of validation images to save to disk in each validation step; default is 10')
 parser.add_argument('--h_flip', type=str2bool, default=False, help='Whether to randomly flip the image horizontally for data augmentation')
 parser.add_argument('--v_flip', type=str2bool, default=False, help='Whether to randomly flip the image vertically for data augmentation')
 parser.add_argument('--brightness', type=float, default=None, help='Whether to randomly change the image brightness for data augmentation. Specifies the max bightness change.')
@@ -304,7 +305,7 @@ if args.mode == 'train':
             cm = np.zeros((label_info['num_classes'], label_info['num_classes']))
 
             # Do the validation on a small set of validation images
-            for ind in val_indices:
+            for ind_counter, ind in enumerate(val_indices):
                 
                 input_image = np.expand_dims(np.float32(utils.load_image(val_input_names[ind])[:args.crop_height, :args.crop_width]),axis=0)/255.0
                 gt = utils.load_image(val_output_names[ind])[:args.crop_height, :args.crop_width]
@@ -314,7 +315,6 @@ if args.mode == 'train':
 
                 output_image = sess.run(network,feed_dict={net_input:input_image})
                 
-
                 output_image = np.array(output_image[0,:,:,:])
                 output_image = helpers.reverse_one_hot(output_image)
                 out_vis_image = helpers.colour_code_segmentation(output_image, label_info['label_values'])
@@ -344,8 +344,9 @@ if args.mode == 'train':
      
                 file_name = os.path.basename(val_input_names[ind])
                 file_name = os.path.splitext(file_name)[0]
-                cv2.imwrite('%s/%04d/%s_pred.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
-                cv2.imwrite('%s/%04d/%s_gt.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
+                if ind_counter < args.num_val_images_save:
+                    cv2.imwrite('%s/%04d/%s_pred.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(out_vis_image), cv2.COLOR_RGB2BGR))
+                    cv2.imwrite('%s/%04d/%s_gt.png'%('checkpoints',epoch, file_name),cv2.cvtColor(np.uint8(gt), cv2.COLOR_RGB2BGR))
 
 
             target.close()
