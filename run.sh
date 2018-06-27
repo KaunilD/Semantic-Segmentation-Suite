@@ -44,5 +44,5 @@ extra_args=$(update_extra_args "$params" "$extra_args" batch-size)
 extra_args=$(update_extra_args "$params" "$extra_args" optimizer)
 
 python main.py --mode train --dataset ${dataset_name} --h_flip True --model ${model_name} $extra_args --crop_height 360 --crop_width 480 | tee ${model_name}-Train.txt
-python main.py --mode val --dataset ${dataset_name} --model ${model_name} 2>&1 | tee ${model_name}-Val.txt
-python main.py --mode test --dataset ${dataset_name} --model ${model_name} 2>&1 | tee ${model_name}-Test.txt
+python main.py --mode val --dataset ${dataset_name} --model ${model_name} --crop_height 360 --crop_width 480 2>&1 | tee ${model_name}-Val.txt
+python main.py --mode test --dataset ${dataset_name} --model ${model_name} --crop_height 360 --crop_width 480 2>&1 | tee ${model_name}-Test.txt
